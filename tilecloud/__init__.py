@@ -617,7 +617,7 @@ class TileStore(object):
         :rtype: iterator
 
         """
-        if self.bounding_pyramid:
+        if self.bounding_pyramid is not None:
             for tilecoord in self.bounding_pyramid:
                 yield Tile(tilecoord)
 

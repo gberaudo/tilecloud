@@ -6,7 +6,7 @@ class BoundingPyramidTileStore(TileStore):
 
     def __init__(self, bounding_pyramid=None, **kwargs):
         TileStore.__init__(self, **kwargs)
-        self.bounding_pyramid = bounding_pyramid or BoundingPyramid()
+        self.bounding_pyramid = bounding_pyramid
 
     def get_one(self, tile):
         if tile and tile.tilecoord in self.bounding_pyramid:

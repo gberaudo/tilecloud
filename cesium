@@ -8,21 +8,23 @@ import random
 import sys
 
 from tilecloud import BoundingPyramid, TileStore, consume
-from tilecloud.filter.benchmark import Benchmark, Statsd, StatsdCountErrors, StatsdCountTiles
-from tilecloud.filter.consistenthash import EveryNth
-from tilecloud.filter.contenttype import ContentTypeAdder
-from tilecloud.filter.error import DropErrors, LogErrors, MaximumConsecutiveErrors, MaximumErrorRate, MaximumErrors
+from tilecloud.filter.error import DropErrors, LogErrors, MaximumConsecutiveErrors
 from tilecloud.filter.logger import Logger
-from tilecloud.filter.rate import RateLimit
 from tilecloud.store.boundingpyramid import BoundingPyramidTileStore
+from tilecloud.grid.quad import QuadTileGrid
+from tilecloud.store.url import URLTileStore
+from tilecloud.store.filesystem import FilesystemTileStore
+from tilecloud.layout.wms import WMSTileLayout
+from tilecloud.layout.osm import OSMTileLayout
 
 
 def main(argv):
     logger = logging.getLogger(os.path.basename(argv[0]))
     logging.basicConfig(level=logging.INFO)
-    grid = QuadTileGrid(max_zoom=13))
-    bounding_pyramid = BoundingPyramid(bounds=[0, 5621521, 556597, 6446275], tilegrid=grid)
-    input_tilestore = URLTileStore(WMSTileLayout('http://...', 'layer', 'srs', 'format', grid))
+    grid = QuadTileGrid(max_zoom=13)
+    bounding_pyramid = BoundingPyramid(tilegrid=grid)
+    bounding_pyramid.fill(extent=[0, 5621521, 556597, 6446275])
+    input_tilestore = URLTileStore([WMSTileLayout('http://...', 'layer', 'EPSG:3857', 'image/bil', grid)])
     output_tilestore = FilesystemTileStore(OSMTileLayout())
     tilestream = BoundingPyramidTileStore(bounding_pyramid).list()
     tilestream = input_tilestore.get(tilestream)
@@ -30,7 +32,7 @@ def main(argv):
     tilestream = imap(MaximumConsecutiveErrors(10), tilestream)
     tilestream = imap(DropErrors(), tilestream)
     tilestream = output_tilestore.put(tilestream)
-    consume(tilestream)
+    consume(tilestream, None)
 
 
 if __name__ == '__main__':
