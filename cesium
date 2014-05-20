@@ -21,18 +21,24 @@ from tilecloud.layout.osm import OSMTileLayout
 def main(argv):
     logger = logging.getLogger(os.path.basename(argv[0]))
     logging.basicConfig(level=logging.INFO)
-    grid = QuadTileGrid(max_zoom=13)
+    grid = QuadTileGrid(max_zoom=13, max_extent=[-20037508.34, -20037508.34, 20037508.34, 20037508.34])
     bounding_pyramid = BoundingPyramid(tilegrid=grid)
-    bounding_pyramid.fill(extent=[0, 5621521, 556597, 6446275])
-    input_tilestore = URLTileStore([WMSTileLayout('http://...', 'layer', 'EPSG:3857', 'image/bil', grid)])
+    bounding_pyramid.fill(extent=[717205, 5688454, 737205, 5708454]) # 20km2 square around Moutiers, France
+    input_tilestore = URLTileStore([WMSTileLayout(
+        url='http://localhost:8080/geoserver/elevation/wms',
+        layers='SRTM90',
+        srs='EPSG:3857',
+        format='image/bil',
+        tilegrid=grid)])
     output_tilestore = FilesystemTileStore(OSMTileLayout())
     tilestream = BoundingPyramidTileStore(bounding_pyramid).list()
+    tilestream = imap(Logger(logger, logging.INFO, '%(tilecoord)s'), tilestream)
     tilestream = input_tilestore.get(tilestream)
     tilestream = imap(LogErrors(logger, logging.ERROR, '%(tilecoord)s: %(error)s'), tilestream)
     tilestream = imap(MaximumConsecutiveErrors(10), tilestream)
     tilestream = imap(DropErrors(), tilestream)
     tilestream = output_tilestore.put(tilestream)
-    consume(tilestream, None)
+    consume(tilestream, 10)
 
 
 if __name__ == '__main__':
